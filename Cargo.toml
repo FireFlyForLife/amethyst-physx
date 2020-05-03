@@ -4,8 +4,17 @@ version = "0.1.0"
 authors = []
 edition = "2018"
 
+[dependencies.amethyst]
+version = "0.15.0"
+default-features = false
+features = ["audio", "renderer", "gltf", "json", "saveload"]
+
 [dependencies]
-amethyst = "0.15.0"
+physx = { path = "physx-rs/physx" }
+physx-sys = { path = "physx-rs/physx-sys" }
+nalgebra = { version = "0.21.0", features=["mint"] }
+glam = { version = "0.8", features=["mint"] }
+mint = "0.5.5"
 
 [features]
 default = ["vulkan"]
