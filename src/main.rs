@@ -29,6 +29,9 @@ use glam::{Mat4, Vec3};
 use physx::prelude::*;
 use physx::visual_debugger::PvdSceneClient;
 use physx::scene::VisualizationParameter;
+use amethyst_imgui::RenderImgui;
+use amethyst_imgui::imgui;
+use amethyst_imgui::imgui::im_str;
 
 pub mod color_conv;
 
@@ -43,9 +46,9 @@ impl<'s> System<'s> for ExampleLinesSystem {
         Read<'s, Time>,
     );
 
-    fn run(&mut self, (mut debug_lines_resource, time): Self::SystemData) {
+    fn run(&mut self, (mut _debug_lines_resource, _time): Self::SystemData) {
         // Drawing debug lines, as a resource
-        let t = (time.absolute_time_seconds() as f32).cos();
+        // let t = (time.absolute_time_seconds() as f32).cos();
 
         // debug_lines_resource.draw_direction(
         //     [t, 0.0, 0.5].into(),
@@ -58,12 +61,14 @@ impl<'s> System<'s> for ExampleLinesSystem {
         //     [0.0, 0.0, 0.2].into(),
         //     Srgba::new(0.5, 0.05, 0.65, 1.0),
         // );
+        amethyst_imgui::with(|ui| {
+            ui.show_demo_window(&mut true);
+        });
     }
 }
 
 const SPHERE_SIZE: f32 = 2.0;
 
-#[derive()]
 struct PhysxResources {
     pub foundation: Foundation,
     pub physics: Option<Physics>,
@@ -99,10 +104,123 @@ impl<'a> System<'a> for PhysXSystem {
     );
 
     fn run(&mut self, (time, mut physx, mut debug_lines): Self::SystemData) {
-        //println!("Delta time: {}", time.fixed_seconds());
+        let mut physx_lock = physx.0.as_ref().unwrap().lock().unwrap();
+        let physx_ref = physx_lock.deref_mut();
+
+        amethyst_imgui::with(|ui| {
+            imgui::Window::new(im_str!("PhysX Visualization Parameters"))
+                .size([300f32, 650f32], imgui::Condition::Once)
+                .build(&ui, || {
+                let mut scale = physx_ref.scene.get_visualization_parameter(VisualizationParameter::Scale);
+                let mut world_axes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::WorldAxes);
+                let mut body_axes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::BodyAxes);
+                let mut body_mass_axes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::BodyMassAxes);
+                let mut body_lin_velocity = physx_ref.scene.get_visualization_parameter(VisualizationParameter::BodyLinVelocity);
+                let mut body_ang_velocity = physx_ref.scene.get_visualization_parameter(VisualizationParameter::BodyAngVelocity);
+                let mut contact_point = physx_ref.scene.get_visualization_parameter(VisualizationParameter::ContactPoint);
+                let mut contact_normal = physx_ref.scene.get_visualization_parameter(VisualizationParameter::ContactNormal);
+                let mut contact_error = physx_ref.scene.get_visualization_parameter(VisualizationParameter::ContactError);
+                let mut contact_force = physx_ref.scene.get_visualization_parameter(VisualizationParameter::ContactForce);
+                let mut actor_axes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::ActorAxes);
+                let mut collision_aabbs = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionAabbs);
+                let mut collision_shapes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionShapes);
+                let mut collision_axes = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionAxes);
+                let mut collision_compounds = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionCompounds);
+                let mut collision_fnormals = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionFnormals);
+                let mut collision_edges = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionEdges);
+                let mut collision_static = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionStatic);
+                let mut collision_dynamic = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CollisionDynamic);
+                let mut deprecated_collision_pairs = physx_ref.scene.get_visualization_parameter(VisualizationParameter::DeprecatedCollisionPairs);
+                let mut joint_local_frames = physx_ref.scene.get_visualization_parameter(VisualizationParameter::JointLocalFrames);
+                let mut joint_limits = physx_ref.scene.get_visualization_parameter(VisualizationParameter::JointLimits);
+                let mut cull_box = physx_ref.scene.get_visualization_parameter(VisualizationParameter::CullBox);
+                let mut mbp_regions = physx_ref.scene.get_visualization_parameter(VisualizationParameter::MbpRegions);
+                if imgui::Slider::new(im_str!("Scale"), 0f32..=1f32).build(&ui, &mut scale) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::Scale, scale);
+                }
+                if imgui::Slider::new(im_str!("WorldAxes"), 0f32..=1f32).build(&ui, &mut world_axes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::WorldAxes, world_axes);
+                }
+                if imgui::Slider::new(im_str!("BodyAxes"), 0f32..=1f32).build(&ui, &mut body_axes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::BodyAxes, body_axes);
+                }
+                if imgui::Slider::new(im_str!("BodyMassAxes"), 0f32..=1f32).build(&ui, &mut body_mass_axes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::BodyMassAxes, body_mass_axes);
+                }
+                if imgui::Slider::new(im_str!("BodyLinVelocity"), 0f32..=1f32).build(&ui, &mut body_lin_velocity) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::BodyLinVelocity, body_lin_velocity);
+                }
+                if imgui::Slider::new(im_str!("BodyAngVelocity"), 0f32..=1f32).build(&ui, &mut body_ang_velocity) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::BodyAngVelocity, body_ang_velocity);
+                }
+                if imgui::Slider::new(im_str!("ContactPoint"), 0f32..=1f32).build(&ui, &mut contact_point) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactPoint, contact_point);
+                }
+                if imgui::Slider::new(im_str!("ContactNormal"), 0f32..=1f32).build(&ui, &mut contact_normal) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactNormal, contact_normal);
+                }
+                if imgui::Slider::new(im_str!("ContactError"), 0f32..=1f32).build(&ui, &mut contact_error) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactError, contact_error);
+                }
+                if imgui::Slider::new(im_str!("ContactForce"), 0f32..=1f32).build(&ui, &mut contact_force) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactForce, contact_force);
+                }
+                if imgui::Slider::new(im_str!("ContactPoint"), 0f32..=1f32).build(&ui, &mut actor_axes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactPoint, actor_axes);
+                }
+                if imgui::Slider::new(im_str!("ContactPoint"), 0f32..=1f32).build(&ui, &mut contact_point) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactPoint, contact_point);
+                }
+                if imgui::Slider::new(im_str!("ContactPoint"), 0f32..=1f32).build(&ui, &mut contact_point) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ContactPoint, contact_point);
+                }
+                if imgui::Slider::new(im_str!("ActorAxes"), 0f32..=1f32).build(&ui, &mut contact_point) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::ActorAxes, contact_point);
+                }
+                if imgui::Slider::new(im_str!("CollisionAabbs"), 0f32..=1f32).build(&ui, &mut collision_aabbs) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionAabbs, collision_aabbs);
+                }
+                if imgui::Slider::new(im_str!("CollisionShapes"), 0f32..=1f32).build(&ui, &mut collision_shapes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionShapes, collision_shapes);
+                }
+                if imgui::Slider::new(im_str!("CollisionAxes"), 0f32..=1f32).build(&ui, &mut collision_axes) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionAxes, collision_axes);
+                }
+                if imgui::Slider::new(im_str!("CollisionCompounds"), 0f32..=1f32).build(&ui, &mut collision_compounds) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionCompounds, collision_compounds);
+                }
+                if imgui::Slider::new(im_str!("CollisionFnormals"), 0f32..=1f32).build(&ui, &mut collision_fnormals) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionFnormals, collision_fnormals);
+                }
+                if imgui::Slider::new(im_str!("CollisionEdges"), 0f32..=1f32).build(&ui, &mut collision_edges) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionEdges, collision_edges);
+                }
+                if imgui::Slider::new(im_str!("CollisionStatic"), 0f32..=1f32).build(&ui, &mut collision_static) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionStatic, collision_static);
+                }
+                if imgui::Slider::new(im_str!("CollisionDynamic"), 0f32..=1f32).build(&ui, &mut collision_dynamic) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CollisionDynamic, collision_dynamic);
+                }
+                if imgui::Slider::new(im_str!("DeprecatedCollisionPairs"), 0f32..=1f32).build(&ui, &mut deprecated_collision_pairs) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::DeprecatedCollisionPairs, deprecated_collision_pairs);
+                }
+                if imgui::Slider::new(im_str!("JointLocalFrames"), 0f32..=1f32).build(&ui, &mut joint_local_frames) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::JointLocalFrames, joint_local_frames);
+                }
+                if imgui::Slider::new(im_str!("JointLimits"), 0f32..=1f32).build(&ui, &mut joint_limits) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::JointLimits, joint_limits);
+                }
+                if imgui::Slider::new(im_str!("CullBox"), 0f32..=1f32).build(&ui, &mut cull_box) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::CullBox, cull_box);
+                }
+                if imgui::Slider::new(im_str!("MbpRegions"), 0f32..=1f32).build(&ui, &mut mbp_regions) {
+                    physx_ref.scene.set_visualization_parameter(VisualizationParameter::MbpRegions, mbp_regions);
+                }
+            });
+        });
+        
+
         if time.delta_seconds() > 0.0 {
-            let mut physx_lock = physx.0.as_ref().unwrap().lock().unwrap();
-            let physx_ref = physx_lock.deref_mut();
             physx_ref.scene.simulate(time.delta_seconds());
             physx_ref.scene
                 .fetch_results(true)
@@ -359,7 +477,8 @@ fn main() -> amethyst::Result<()> {
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(RenderToWindow::from_config_path(display_config_path)?)
                 .with_plugin(RenderDebugLines::default())
-                .with_plugin(RenderSkybox::default()),
+                .with_plugin(RenderSkybox::default())
+                .with_plugin(RenderImgui::<amethyst::input::StringBindings>::default())
         )?;
 
     let mut game = Application::new(assets_dir, ExampleState::new(), game_data)?;

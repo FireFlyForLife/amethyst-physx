@@ -15,6 +15,8 @@ physx-sys = { path = "physx-rs/physx-sys" }
 nalgebra = { version = "0.21.0", features=["mint"] }
 glam = { version = "0.8", features=["mint"] }
 mint = "0.5.5"
+# Until the official amethyst-imgui crate updates it's amethyst dependency to 0.15, I have to use my own fork
+amethyst-imgui = { git = "https://github.com/FireFlyForLife/amethyst-imgui.git", version="0.15.0" }
 
 [features]
 default = ["vulkan"]
