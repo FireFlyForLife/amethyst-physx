@@ -30,6 +30,7 @@ use physx::prelude::*;
 use physx::visual_debugger::PvdSceneClient;
 use physx::scene::VisualizationParameter;
 
+pub mod color_conv;
 
 const PX_PHYSICS_VERSION: u32 = physx::version(4, 1, 1);
 
@@ -46,17 +47,17 @@ impl<'s> System<'s> for ExampleLinesSystem {
         // Drawing debug lines, as a resource
         let t = (time.absolute_time_seconds() as f32).cos();
 
-        debug_lines_resource.draw_direction(
-            [t, 0.0, 0.5].into(),
-            [0.0, 0.3, 0.0].into(),
-            Srgba::new(0.5, 0.05, 0.65, 1.0),
-        );
+        // debug_lines_resource.draw_direction(
+        //     [t, 0.0, 0.5].into(),
+        //     [0.0, 0.3, 0.0].into(),
+        //     Srgba::new(0.5, 0.05, 0.65, 1.0),
+        // );
 
-        debug_lines_resource.draw_line(
-            [t, 0.0, 0.5].into(),
-            [0.0, 0.0, 0.2].into(),
-            Srgba::new(0.5, 0.05, 0.65, 1.0),
-        );
+        // debug_lines_resource.draw_line(
+        //     [t, 0.0, 0.5].into(),
+        //     [0.0, 0.0, 0.2].into(),
+        //     Srgba::new(0.5, 0.05, 0.65, 1.0),
+        // );
     }
 }
 
@@ -108,20 +109,26 @@ impl<'a> System<'a> for PhysXSystem {
                 .expect("error occured during simulation");
 
             let render_buffer = physx_ref.scene.get_render_buffer();
-            let lines = render_buffer.get_lines();
-            for line in lines{
+            for point in render_buffer.get_points() {
+                let mut end_point = Point3::from(point.pos);
+                end_point.x += 0.01;
+                debug_lines.draw_line(Point3::from(point.pos), end_point, color_conv::unpack_color(point.color));
+            }
+            for line in render_buffer.get_lines() {
                 debug_lines.draw_line(
-                    Point3::new(line.pos0.x(), line.pos0.y(), line.pos0.z()), 
-                    Point3::new(line.pos1.x(), line.pos1.y(), line.pos1.z()), 
-                    Srgba::new(0.0, 1.0, 0.0, 1.0));
+                    Point3::from(line.pos0), 
+                    Point3::from(line.pos1), 
+                    color_conv::unpack_color(line.color0));
+            }
+            for triangle in render_buffer.get_triangles() {
+                debug_lines.draw_line(Point3::from(triangle.pos0), Point3::from(triangle.pos1), color_conv::unpack_color(triangle.color0));
+                debug_lines.draw_line(Point3::from(triangle.pos1), Point3::from(triangle.pos2), color_conv::unpack_color(triangle.color1));
+                debug_lines.draw_line(Point3::from(triangle.pos0), Point3::from(triangle.pos2), color_conv::unpack_color(triangle.color2));
             }
             
-            let _ball_pos = unsafe { physx_ref.scene.get_rigid_actor_unchecked(&physx_ref.sphere_handle) }
-                .get_global_position();
-            //println!("Ball pos: {}", ball_pos);
-            //debug_lines.draw_sphere(Point3::new(ball_pos.x(), ball_pos.y(), ball_pos.z()), SPHERE_SIZE, 20, 20, Srgba::new(1.0, 0.0, 0.0, 1.0));
-        
-        }
+            // let _ball_pos = unsafe { physx_ref.scene.get_rigid_actor_unchecked(&physx_ref.sphere_handle) }
+            //     .get_global_position();        
+        } 
     }
 
     fn dispose(self, world: &mut World)
@@ -170,7 +177,10 @@ impl SimpleState for ExampleState {
 
         scene.set_visualization_parameter(VisualizationParameter::Scale, 1.0);
         scene.set_visualization_parameter(VisualizationParameter::ContactPoint, 1.0);
+        scene.set_visualization_parameter(VisualizationParameter::ContactForce, 1.0);
+        scene.set_visualization_parameter(VisualizationParameter::ContactNormal, 1.0);
         scene.set_visualization_parameter(VisualizationParameter::CollisionShapes, 1.0);
+        scene.set_visualization_parameter(VisualizationParameter::WorldAxes, 1.0);
 
         let pvd_scene_client = Some(Box::new(scene.get_pvd_client()));
 
@@ -197,21 +207,21 @@ impl SimpleState for ExampleState {
 
         // Setup debug lines as a component and add lines to render axis&grid
         let mut debug_lines_component = DebugLinesComponent::with_capacity(100);
-        debug_lines_component.add_direction(
-            [0.0, 0.0001, 0.0].into(),
-            [0.2, 0.0, 0.0].into(),
-            Srgba::new(1.0, 0.0, 0.23, 1.0),
-        );
-        debug_lines_component.add_direction(
-            [0.0, 0.0, 0.0].into(),
-            [0.0, 0.2, 0.0].into(),
-            Srgba::new(0.5, 0.85, 0.1, 1.0),
-        );
-        debug_lines_component.add_direction(
-            [0.0, 0.0001, 0.0].into(),
-            [0.0, 0.0, 0.2].into(),
-            Srgba::new(0.2, 0.75, 0.93, 1.0),
-        );
+        // debug_lines_component.add_direction(
+        //     [0.0, 0.0001, 0.0].into(),
+        //     [0.2, 0.0, 0.0].into(),
+        //     Srgba::new(1.0, 0.0, 0.23, 1.0),
+        // );
+        // debug_lines_component.add_direction(
+        //     [0.0, 0.0, 0.0].into(),
+        //     [0.0, 0.2, 0.0].into(),
+        //     Srgba::new(0.5, 0.85, 0.1, 1.0),
+        // );
+        // debug_lines_component.add_direction(
+        //     [0.0, 0.0001, 0.0].into(),
+        //     [0.0, 0.0, 0.2].into(),
+        //     Srgba::new(0.2, 0.75, 0.93, 1.0),
+        // );
 
         let width: u32 = 10;
         let depth: u32 = 10;
